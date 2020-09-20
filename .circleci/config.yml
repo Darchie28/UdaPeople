@@ -2,22 +2,7 @@ version: 2.1
 
 ### It's a good practice to keep your commands at the top of the config file. In this project, you'll need at least 2 commands:
 
-commands:
-  install-dependencies:
-    parameters:
-      layer:
-        type: string
-      steps:
-        - run:
-            name: Install <<parameter.layer >> dependencies
-            command: |
-              cd << parameters.layer >>
-              npm i
-
-
-
-
-
+# commands:
 #   destroy-environment:
 #     description: Destroy backend and frontend cloudformation stacks given a workflow ID.
 #     ...
@@ -32,8 +17,6 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
-      - install-dependencies:
-          layer: "frontend"
       - run:
           name: Build Frontend Code
           command: |
@@ -46,16 +29,14 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
-      - install-dependencies:
-          layer: "backend"
       - run:
-        name: Build Backend Code
-        command: |
-          cd backend
-          npm i
-          npm run build
+          name: Build Backend Code
+          command: |
+            cd backend
+            npm i
+            npm run build
 
-    test-frontend:
+  test-frontend:
     docker:
       - image: circleci/node
     steps:
@@ -115,5 +96,7 @@ workflows:
     jobs:
       - build-frontend
       - build-backend
-      - test-frontend
-      - test-backend
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
