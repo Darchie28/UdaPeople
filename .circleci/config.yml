@@ -2,10 +2,16 @@ version: 2.1
 
 ### It's a good practice to keep your commands at the top of the config file. In this project, you'll need at least 2 commands:
 
-# commands:
-#   destroy-environment:
-#     description: Destroy backend and frontend cloudformation stacks given a workflow ID.
-#     ...
+commands:
+  destroy-environment:
+    description: Destroy backend and frontend cloudformation stacks given a workflow ID.
+    steps:
+      - run:
+          name: Destroy environment
+          command: |
+            aws cloudformation delete-stack --stack-name  "udapeople-frontend-${CIRCLE_WORKFLOW_ID}"
+            aws cloudformatiion delete-stack --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}"
+          when: on_fail
 
 #   revert-migration:
 #     description: Revert the last migration if successfully run in the current workflow.
@@ -84,7 +90,35 @@ jobs:
             npm i
             npm audit --audit-level=critical
 
-#  deploy-infrastructure:
+  deploy-infrastructure:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: echo "[all]" > .circleci/ansible/inventory.txt
+      - run:
+          name: Ensure backend infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
+              --parameter-override ID="${CIRCLE_WORKFLOW_ID}" \
+              --tags project=udaPeople
+            URLS=$(aws ec2 describe-instances --region us-west-2 --query "Reservations[*].Instances[*].PublicDnsName" --output text)
+            echo "URLS=$URLS"
+            curl -H "Content-Type: text/plain" -H "token: 332bea08-f2b7-40a3-b005-995abddd0592" --request PUT --data "" https://api.memstash.io/values/url
+      - run:
+          name: Ensure frontend infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \
+              --tags project=udaPeople
+              ARN=$(aws ec2 describe-instances --region us-west-2 --query "Exports[0].Value" --output text)
+              echo "ARN=$ARN"
+              curl -H "Content-Type: text/plain" -H "token: 87da2066-17d7-4b71-886f-f1b836354890" --request PUT --data "" https://api.memstash.io/values/arn
+      - destroy-environment
 
 #  configure-infrastructure:
 
@@ -111,3 +145,5 @@ workflows:
           requires: [build-frontend]
       - scan-backend:
           requires: [build-backend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
