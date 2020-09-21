@@ -76,7 +76,7 @@ jobs:
           command: |
             cd frontend
             npm i
-            npm audit fix --audit-level=critical 
+            npm audit fix --audit-level=critical
 
   scan-backend:
     docker:
@@ -88,14 +88,15 @@ jobs:
           command: |
             cd backend
             npm i
-            npm audit fix --audit-level=critical 
+            npm audit fix --audit-level=critical
 
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - run: echo "[all]" > .circleci/ansible/inventory.txt
+      # - run: echo "[all]" > .circleci/ansible/inventory.txt
+      - run: yum -y install tar gzip
       - run:
           name: backend infra
           command: |
@@ -115,12 +116,31 @@ jobs:
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \
               --tags project=udaPeople
-              ARN=$(aws ec2 describe-instances --region us-west-2 --query "Exports[0].Value" --output text)
+              ARN=$(aws ec2 cloudformation list-exports --region us-west-2 --query "Exports[0].Value" --output text)
               echo "ARN=$ARN"
               curl -H "Content-Type: text/plain" -H "token: 87da2066-17d7-4b71-886f-f1b836354890" --request PUT --data "" https://api.memstash.io/values/arn
       - destroy-environment
 
-#  configure-infrastructure:
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["67:f6:c9:0f:1e:ee:07:90:e9:59:16:44:d3:77:9a:eb"]
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update tar gzip ansible nodejs npm curl
+            pip install awscli
+      - run:
+          name: Set up inventory file
+          command: |
+            cd .circleci/ansible
+            echo [all] > inventory.txt
+            URLS=$(curl -H "Content-Type: text/plain" -H "token: 332bea08-f2b7-40a3-b005-995abddd0592" --request PUT --data "" https://api.memstash.io/values/url)
+            echo "$URLS" > inventory.txt
+            cat inventory.txt
 
 #  run-migrations:
 
@@ -147,3 +167,5 @@ workflows:
           requires: [build-backend]
       - deploy-infrastructure:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
