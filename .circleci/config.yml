@@ -51,7 +51,7 @@ jobs:
           name: Test Frontend Code
           command: |
             cd frontend
-            npm audit fix --audit-level --force
+            npm audit fix --audit-level 
             npm run test
 
   test-backend:
