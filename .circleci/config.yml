@@ -97,7 +97,7 @@ jobs:
       - checkout
       - run: echo "[all]" > .circleci/ansible/inventory.txt
       - run:
-          name: Ensure backend infrastructure exist
+          name: backend infra
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
@@ -108,7 +108,7 @@ jobs:
             echo "URLS=$URLS"
             curl -H "Content-Type: text/plain" -H "token: 332bea08-f2b7-40a3-b005-995abddd0592" --request PUT --data "" https://api.memstash.io/values/url
       - run:
-          name: Ensure frontend infrastructure exist
+          name: frontend infra
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
