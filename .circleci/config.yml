@@ -11,8 +11,6 @@ commands:
           command: |
             aws s3 rm "s3://udapeoplefrontend${CIRCLE_WORKFLOW_ID}" --recursive
             aws cloudformatiion delete-stack --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}"
-            # curl -H "Content-Type: text/plain" -H "token: 87da2066-17d7-4b71-886f-f1b836354890" --request PUT --data "" https://api.memstash.io/values/url
-            # curl -H "Content-Type: text/plain" -H "token: 87da2066-17d7-4b71-886f-f1b836354890" --request PUT --data "" https://api.memstash.io/values/arn
           when: on_fail
 
   revert-migration:
